@@ -1,0 +1,283 @@
+<html>
+	<head>
+		<title>Bitches be chattin'</title>
+	</head>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		lastTimeGot = 0;
+		hasFocus = true;
+		myname = "Anonymous";
+		lastMessage = null;
+		users = [];
+		recentlySubmittedTyping = 0;
+		siteURL = "http://linode.stuartcoope.com:8000";
+		emoticons = [ 
+			[":)", "0px 0px"], 
+			[":(", "-37px -18px"],
+			[":S", "-19px -18px"],
+			[":|", "-37px -36px"],
+			["O.o", "-55px -36px"],
+			[":P", "-1px -18px"],
+			[":p", "-1px -18px"],			
+			[":D:D", "-37px 0px"],
+			[":D", "-19px 0px"],
+			["8)", "-73px 0px"],
+			["Q.Q", "-55px -18px"],
+			[":O", "-1px -36px"],
+			[":o", "-19px -36px"]
+		];
+		
+		titleTimeout = null;
+		typingTimeout = null;
+		myID = null;
+		
+		$(document).ready(function(){
+
+			//try for graceful disconnects
+			$(window).unload(function() {
+				$.ajax({
+					url: siteURL+"/disconnect?"+myID,
+					context: document.body,
+					async : false
+				});
+			});
+
+			$("#textInput").keyup(function(e){
+				if(e.which == 13){
+					$.ajax({
+						url: siteURL+"/add?" + myID + "?" + encodeURIComponent(e.target.value),
+						context: document.body,
+						success: function(){
+							
+						}
+					});
+					e.target.value="";
+				}
+				
+				//submit that we are typing
+				if(!recentlySubmittedTyping){
+					$.ajax({
+						url: siteURL+"/typing?" + myID,
+						context: document.body,
+						success: function(){
+							
+						}
+					});
+					
+					recentlySubmittedTyping = 1;
+					
+					clearTimeout(typingTimeout);
+					typingTimeout = setTimeout(function(){
+						recentlySubmittedTyping = 0;
+					}, 5000);
+				}
+			});
+			
+			connect = function(){
+				$.ajax({
+					url: siteURL+"/connect",
+					context:document.body,
+					success: function(data){
+						myID = data;
+						
+						getMessages();
+					}
+				});
+			};
+			
+			getMessages = function(){
+				$.ajax({
+				
+					url: siteURL+"/messages?"+myID+"?"+lastTimeGot,
+					context: document.body,
+					success: function(data){
+					
+						var shouldScroll = $('#chatbox .messages').scrollTop() == $('#chatbox .messages').height();
+						var messages = $.parseJSON(data);
+						
+						for(var i=0; i < messages.length; i++){
+							m = messages[i];
+							lastTimeGot = m.time+1;
+							
+							if(m.type == "message"){
+								lastMessage = m;
+								
+								var t = new Date(m.time);
+								
+								lastTimeGot = m.time+1;
+								
+								var time = "";
+								if(t.getHours() < 10){
+									time += '0'+t.getHours();
+								}else{
+									time += t.getHours();
+								}
+								time += ':';
+								
+								if(t.getMinutes() < 10){
+									time += '0' + t.getMinutes();
+								}else{
+									time += t.getMinutes();
+								}
+								
+								time += ':';
+								if(t.getSeconds() < 10){
+									time += '0' + t.getSeconds();
+								}else{
+									time += t.getSeconds();
+								}
+								
+								msg = m.content;
+								if(users[m.userID]){
+									username = users[m.userID].username;
+								}else{
+									username = "Unknown";
+								}
+								
+								//message parse rules
+								//emoticons
+								for(var j=0; j<emoticons.length; j++){
+									//msg = msg.replace( new RegExp("/^"+emoticons[j][0]+"$/", "g"), "<span>iSmile</span>");
+									msg = msg.replace( emoticons[j][0], "<span class='smiley' style='background-position:"+emoticons[j][1]+"'>"+emoticons[j][0]+"</span>");
+								}
+								
+								$('#chatbox .messages ul li:last').after('<li id="'+m.guid+'"><span class="time">'+time+'</span><span class="username">'+username+'</span><span class="message">'+msg+'</span></li>');
+								
+								if(!hasFocus){
+									document.title = "New Message";
+								}
+								
+								$('#chatbox .messages').animate({scrollTop: $('#chatbox .messages ul').height() - $('#chatbox .messages').height() + 20 });
+
+								
+								clearTimeout(titleTimeout);
+								flashyUnfocus(0);
+							}else if(m.type == "connection"){
+							
+								users[m.userID] = {
+									userID: m.userID,
+									state: 'connected',
+									username: m.content,
+									lastTime: m.time,
+								};
+								
+								$('#chatbox .users ul li:last').after('<li id=user_'+m.userID+'>'+m.content+'</li>');
+							
+							}else if(m.type == "username"){
+								//lastMessage = m;
+								users[m.userID].username = m.content;
+								$('#user_'+m.userID).html(m.content);
+								
+								
+								/*$('#chatbox .messages ul li:last').after('<li id="'+m.guid+'"><span class="announcement">'+m.content+'</span></li>');
+								clearTimeout(titleTimeout);
+								flashyUnfocus(0);*/
+							}else if(m.type == "disconnect"){
+								if(users[m.userID]){
+									users[m.userID].state = 'disconnected';
+								}
+								$('#user_'+m.userID).remove();
+							}else if(m.type == "event"){
+								if(m.content == "typing"){
+									$('#user_'+m.userID).css('color', 'red');
+									setTimeout("typingTimeoutEvent('#user_"+m.userID+"')", 5000);
+								}
+							}
+						}
+						
+						
+						
+						getMessages();
+					}
+				});
+				
+				$(window).focus(function() {
+				    document.title="Bitches be chattin'";
+				    clearTimeout(titleTimeout);
+				    hasFocus = true;
+				    
+				});
+				
+				$(window).blur(function() {
+					hasFocus = false;
+				});
+				
+				
+				flashyUnfocus = function (state){
+					clearTimeout(titleTimeout);
+					
+					if(!hasFocus){
+						if(state){
+							document.title = "New Message";
+						}else{
+							if(lastMessage){
+								document.title = lastMessage.content;
+							}
+						}
+						
+						titleTimeout = setTimeout("flashyUnfocus("+!state+")", 3000);
+					}
+				}
+			};
+			
+			typingTimeoutEvent = function(user){
+				$(user).css('color', 'black');
+			};
+			
+			nameChange = function(e){
+				$("#nameInput").css('color', 'black');
+				myname = e.target.value;
+				
+				$.ajax({
+					url: siteURL+"/username?" + myID + "?" + encodeURIComponent(myname),
+					context: document.body,
+					success: function(){
+						
+					}
+				});
+				
+			};
+			
+			$("#nameInput").keyup(function(e){
+				if(e.which == 13){
+					nameChange(e);
+				}else{
+					$("#nameInput").css('color', 'gray');
+				}
+				
+				
+			});
+			
+			$("#nameInput").blur(function(e){
+				nameChange(e);
+			});
+			
+			
+			connect();
+			//getMessages(lastTimeGot);
+			
+		});
+	</script>
+	<link type="text/css" rel="stylesheet" href="style.css" />
+	<body>
+	<div class="content">
+		<h2>This shit is a little bit raw</h2>
+		<div class="your-name">
+			<input type="text" id="nameInput" placeholder="Your name" value="" maxlength="8" />
+		</div>
+		<div id="chatbox">
+			<div class="messages">
+				<ul>
+					<li id="-1"><span class="time">01:01:01</span><span class="username">Sample</span><span class="message">Example message</span></li>
+				</ul>
+			</div>
+			<div class="users">
+				<ul>
+					<li>Sample User</li>
+				</ul>
+			</div>
+			<input id="textInput" type="text" placeholder="chat..." value="" />
+			<!--<textarea class="code" id="textInput" placeholder="chat...">codez</textarea>-->
+		</body>
+	</div>
+</html>

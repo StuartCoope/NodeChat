@@ -1,0 +1,94 @@
+body{
+	background-color:gray;
+	font-family: sans-serif;
+}
+.content{
+	width: 800px;
+	background-color: white;
+	margin-left: auto;
+	margin-right: auto;
+	-webkit-border-radius: 20;
+	padding: 20px;
+}
+.content h2{
+	margin-right:20px;
+}
+#chatbox{
+	border:1px solid black;	
+	-webkit-border-radius: 20;
+	padding:5px;
+}
+#chatbox input{
+	margin-left: 30px;
+	width: 400px;
+	padding: 6px;
+	-webkit-border-radius: 8px;
+	margin-bottom: 8px;
+}
+#chatbox textarea{
+	margin-left: 30px;
+	width: 400px;
+	padding: 6px;
+	-webkit-border-radius: 8px;
+	margin-bottom: 8px;
+}
+#chatbox .messages{
+	height: 200px;
+	width:600px;
+	overflow: scroll;
+	overflow-x: hidden;
+	float:left
+}
+#chatbox .messages ul li{
+	list-style: none;
+	margin-top: 2px;
+}
+#chatbox .messages ul li .time{
+	color: gray;
+	font-weight: bold;
+	margin-right: 7px;
+	border-right: 1px solid black;
+	padding-right: 9px;
+}
+
+#chatbox .messages ul li .username{
+	color: gray;
+	font-weight: bold;
+	margin-right: 7px;
+	border-right: 1px solid black;
+	padding-right: 9px;
+}
+
+#chatbox .messages ul li .announcement{
+	color: lightgray;
+	font-weight: bold;
+	text-align:center;
+	width: 448px;
+	display: block;
+}
+#chatbox .users{
+	height:200px;
+	width:160px;
+	overflow:scroll;
+	overflow-x:hidden;
+}
+
+.message{
+	margin-left:5px;
+}
+.your-name input{
+	float:right;
+	margin-top:-48px;
+	width: 180px;
+	padding: 6px;
+	-webkit-border-radius: 8px;
+	margin-bottom: 8px;
+	color:gray;
+}
+.smiley{
+	background-image: url("emoticons.png");
+	text-indent:-9000px;
+	width:18px;
+	height:17px;
+	display: inline-block;
+}
